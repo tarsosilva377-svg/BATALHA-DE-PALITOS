@@ -58,7 +58,7 @@ canvas{width:100%;height:100%;display:block}
 </div>
 <div class="turn-line" id="turnIndicator">🟢 SUA VEZ — [🛈 Mover: 4 / 6 | Mira: 2 / 8 | Força: 1 / 3 | Atirar: 5 | Munição: 🔴 / 🟢 / 🟡]</div>
 <div class="canvas-container" id="canvasContainer">
-<div class="ai-ammo-indicator" id="aiAmmoIndicator">🤖 Robô equipou: ⚫</div>
+<div class="ai-ammo-indicator" id="aiAmmoIndicator">🤖 Jogador equipou: ⚫</div>
 <canvas id="gameCanvas"></canvas>
 <div class="modal-overlay active" id="gameModal">
   <div class="modal-card">
@@ -83,6 +83,7 @@ let conn = null;
 let isHost = false;
 let isMultiplayer = false;
 let localPlayerId = 0; 
+let hostLogicalWidth = 0;
 
 const bgMusic = new Audio('the_big_fight.mp3..oga');
 bgMusic.loop = true;
@@ -167,7 +168,8 @@ function sendStageDataToClient() {
       peakXsCache: peakXsCache,
       rocks: rocks,
       hostWidth: logicalWidth,
-      hostHeight: logicalHeight
+      hostHeight: logicalHeight,
+      currentTankIndex: currentTankIndex
     });
   }
 }
@@ -221,7 +223,11 @@ if(t.isPlayer || (isMultiplayer && t.id === localPlayerId)) document.getElementB
 }
 
 if(isMultiplayer && conn){
-  conn.send({type:'FIRE', tankIndex: currentTankIndex, weapon: wi, angle: t.angle, power: t.power, targetX: targetCursor.x, targetY: targetCursor.y});
+  let sendX = targetCursor.x;
+  if(hostLogicalWidth && logicalWidth !== hostLogicalWidth) {
+    sendX = targetCursor.x * (hostLogicalWidth / logicalWidth);
+  }
+  conn.send({type:'FIRE', tankIndex: currentTankIndex, weapon: wi, angle: t.angle, power: t.power, targetX: sendX, targetY: targetCursor.y});
 }
 
 executeFireAction(currentTankIndex, wi, t.angle, t.power, targetCursor.x, targetCursor.y);
@@ -245,11 +251,15 @@ const sy = t.y + 10;
 projectiles=[];
 
 if(wi===2){
+let actualTx = tx;
+if(isMultiplayer && hostLogicalWidth && logicalWidth !== hostLogicalWidth) {
+  actualTx = tx * (logicalWidth / hostLogicalWidth);
+}
 let enemy = tanks.find(tk => tk.team !== t.team);
 let defaultTx = enemy ? (enemy.x + enemy.width/2) : logicalWidth/2;
 let defaultTy = enemy ? enemy.y : logicalHeight/2;
 
-const tgtX = (isMultiplayer && tx > 0) ? tx : defaultTx;
+const tgtX = (isMultiplayer && actualTx > 0) ? actualTx : defaultTx;
 const tgtY = (isMultiplayer && ty > 0) ? ty : defaultTy;
 targetCursor.active = false;
 
@@ -527,6 +537,16 @@ t.health=Math.max(0,t.health-dmg);
 
 updateHealthBars();
 AudioFX.playExplosion();
+
+if(isMultiplayer && isHost && conn) {
+  conn.send({
+    type: 'STATE_SYNC',
+    tanks: tanks,
+    terrainHeights: Array.from(terrainHeights),
+    currentTankIndex: currentTankIndex
+  });
+}
+
 projectiles.splice(i, 1);
 break;
 }
@@ -542,6 +562,16 @@ if(!checkWin())nextTurn();
 function nextTurn(){
 currentTankIndex=(currentTankIndex+1)%tanks.length;
 const a=tanks[currentTankIndex];
+
+if(isMultiplayer && isHost && conn) {
+  conn.send({
+    type: 'STATE_SYNC',
+    tanks: tanks,
+    terrainHeights: Array.from(terrainHeights),
+    currentTankIndex: currentTankIndex
+  });
+}
+
 if(isMultiplayer){
   const myTurn = (localPlayerId === currentTankIndex);
   document.getElementById('turnIndicator').textContent = myTurn ? '🟢 SUA VEZ — [🛈 Mover: 4 / 6 | Mira: 2 / 8 | Força: 1 / 3 | Atirar: 5]' : '⏳ VEZ DO ADVERSÁRIO...';
@@ -560,7 +590,6 @@ if(isMultiplayer){
 }
 }
 
-// INTELIGÊNCIA ARTIFICIAL PRECISA (SIMULAÇÃO REAL DE TRAJETÓRIA)
 function executeAIShot(at){
 if(at.health<=0)return;
 const targets=tanks.filter(t=>t.team!==at.team&&t.health>0);
@@ -574,14 +603,11 @@ let acy = at.y + at.height/2;
 
 at.facing = (tcx > acx) ? 1 : -1;
 let distance = Math.abs(tcx - acx);
-let heightDiff = tcy - acy;
 
-// Simulação balística real para encontrar ângulo e força ótimos
 let bestAngle = 45;
 let bestPower = 50;
 let minError = 999999;
 
-// Testa combinações de ângulo (20° a 70°) e força (25% a 95%)
 for(let ang = 20; ang <= 70; ang += 2) {
   for(let pow = 25; pow <= 95; pow += 3) {
     let rad = ang * Math.PI / 180;
@@ -590,7 +616,6 @@ for(let ang = 20; ang <= 70; ang += 2) {
     let vx = Math.cos(rad) * bs * at.facing;
     let vy = -Math.sin(rad) * bs;
     
-    // Simula a trajetória passo a passo
     let simX = acx + Math.cos(rad)*18*at.facing;
     let simY = acy - Math.sin(rad)*18;
     let simVy = vy;
@@ -675,7 +700,13 @@ a.isMoving=true;
 a.facing=moveDir>0?1:-1;
 a.x=Math.max(10,Math.min(logicalWidth-25,a.x+moveDir*1.8));
 updateTankY(a);
-if(isMultiplayer && conn) conn.send({type:'MOVE', tankIndex: currentTankIndex, x: a.x, facing: a.facing});
+if(isMultiplayer && conn) {
+  let sendX = a.x;
+  if(hostLogicalWidth && logicalWidth !== hostLogicalWidth) {
+    sendX = a.x * (hostLogicalWidth / logicalWidth);
+  }
+  conn.send({type:'MOVE', tankIndex: currentTankIndex, x: sendX, facing: a.facing});
+}
 }else a.isMoving=false;
 
 if(angleDir!==0){
@@ -811,6 +842,7 @@ function joinGame() {
 function setupConnectionListeners() {
   conn.on('data', (data) => {
     if(data.type === 'STAGE_DATA') {
+      hostLogicalWidth = data.hostWidth;
       let scaleX = logicalWidth / data.hostWidth;
       
       terrainHeights = new Float32Array(Math.ceil(logicalWidth) + 1);
@@ -823,6 +855,7 @@ function setupConnectionListeners() {
       tanks = data.tanks.map(tk => ({...tk, x: tk.x * scaleX}));
       peakXsCache = data.peakXsCache.map(px => px * scaleX);
       rocks = data.rocks.map(r => ({...r, x: r.x * scaleX, peakRef: r.peakRef * scaleX}));
+      currentTankIndex = data.currentTankIndex || 0;
 
       const modal = document.getElementById('gameModal');
       if(modal) {
@@ -833,8 +866,12 @@ function setupConnectionListeners() {
       isShooting = false;
       projectiles = [];
     } else if(data.type === 'MOVE') {
+      let receivedX = data.x;
+      if(hostLogicalWidth && logicalWidth !== hostLogicalWidth) {
+        receivedX = data.x * (logicalWidth / hostLogicalWidth);
+      }
       let t = tanks[data.tankIndex];
-      if(t) { t.x = data.x; t.facing = data.facing; t.isMoving = true; updateTankY(t); }
+      if(t) { t.x = receivedX; t.facing = data.facing; t.isMoving = true; updateTankY(t); }
     } else if(data.type === 'ANGLE') {
       let t = tanks[data.tankIndex];
       if(t) { t.angle = data.angle; }
@@ -843,6 +880,18 @@ function setupConnectionListeners() {
       if(t) { t.power = data.power; }
     } else if(data.type === 'FIRE') {
       executeFireAction(data.tankIndex, data.weapon, data.angle, data.power, data.targetX, data.targetY);
+    } else if(data.type === 'STATE_SYNC') {
+      let scaleX = logicalWidth / (hostLogicalWidth || logicalWidth);
+      tanks = data.tanks.map(tk => ({...tk, x: tk.x * scaleX}));
+      let rawH = data.terrainHeights;
+      for(let x=0; x<=logicalWidth; x++) {
+        let srcX = Math.min(rawH.length - 1, Math.floor(x / scaleX));
+        terrainHeights[x] = rawH[srcX];
+      }
+      currentTankIndex = data.currentTankIndex;
+      tanks.forEach(t => updateTankY(t));
+      updateHealthBars();
+      checkWin();
     } else if(data.type === 'START') {
       startMultiplayerGame();
     }
@@ -983,4 +1032,3 @@ resizeCanvas();initStage();gameLoop();
 </script>
 </body>
 </html>
-
