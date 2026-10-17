@@ -154,14 +154,22 @@ tanks.forEach(t=>updateTankY(t));currentTankIndex=0;effects=[];matchTime=0;
 document.getElementById('stageIndicator').textContent=`⚔️ FASE ${currentStage}/${maxStages}`;
 
 if(isMultiplayer && isHost && conn) {
-  conn.send({
-    type: 'STAGE_DATA',
-    terrainHeights: Array.from(terrainHeights),
-    tanks: tanks,
-    peakXsCache: peakXsCache,
-    rocks: rocks
-  });
+  sendStageDataToClient();
 }
+}
+
+function sendStageDataToClient() {
+  if(conn && isHost) {
+    conn.send({
+      type: 'STAGE_DATA',
+      terrainHeights: Array.from(terrainHeights),
+      tanks: tanks,
+      peakXsCache: peakXsCache,
+      rocks: rocks,
+      hostWidth: logicalWidth,
+      hostHeight: logicalHeight
+    });
+  }
 }
 
 function getTerrainY(x){const i=Math.floor(x);if(i<0)return terrainHeights[0]||logicalHeight*.68;if(i>=logicalWidth)return terrainHeights[Math.floor(logicalWidth)]||logicalHeight*.68;return terrainHeights[i];}
@@ -237,8 +245,12 @@ const sy = t.y + 10;
 projectiles=[];
 
 if(wi===2){
-const tgtX = (isMultiplayer) ? tx : (t.isPlayer ? targetCursor.x : (logicalWidth/2));
-const tgtY = (isMultiplayer) ? ty : (t.isPlayer ? targetCursor.y : (logicalHeight/2));
+let enemy = tanks.find(tk => tk.team !== t.team);
+let defaultTx = enemy ? (enemy.x + enemy.width/2) : logicalWidth/2;
+let defaultTy = enemy ? enemy.y : logicalHeight/2;
+
+const tgtX = (isMultiplayer && tx > 0) ? tx : defaultTx;
+const tgtY = (isMultiplayer && ty > 0) ? ty : defaultTy;
 targetCursor.active = false;
 
 for(let i=-1; i<=1; i++){
@@ -616,7 +628,7 @@ function voltarAoMenu() {
   conn = null;
   
   document.getElementById('modalTitle').textContent = '⚔️ MODO MULTIPLAYER WI-FI';
-  document.getElementById('modalDesc').textContent = 'Escolha como deseja jogar na sua TV ou com amigos na mesma rede Wi-Fi:';
+  document.getElementById('modalDesc').textContent = 'Escolha como deseja jogar com seus amigos na mesma rede Wi-Fi:';
   document.getElementById('menuButtons').innerHTML = `
     <button class="btn-modal" onclick="showHostPrompt()">Criar Sala (Host)</button>
     <button class="btn-modal secondary" onclick="showJoinPrompt()">Entrar em Sala (Convidado)</button>
@@ -744,18 +756,7 @@ function hostCustomGame() {
   peer.on('connection', (c) => {
     conn = c;
     setupConnectionListeners();
-    // O Host envia o mapa imediatamente ao conectar o amigo
-    setTimeout(() => {
-      if(conn && isHost) {
-        conn.send({
-          type: 'STAGE_DATA',
-          terrainHeights: Array.from(terrainHeights),
-          tanks: tanks,
-          peakXsCache: peakXsCache,
-          rocks: rocks
-        });
-      }
-    }, 500);
+    setTimeout(() => { sendStageDataToClient(); }, 500);
   });
 }
 
@@ -786,12 +787,19 @@ function joinGame() {
 function setupConnectionListeners() {
   conn.on('data', (data) => {
     if(data.type === 'STAGE_DATA') {
-      terrainHeights = new Float32Array(data.terrainHeights);
-      tanks = data.tanks;
-      peakXsCache = data.peakXsCache;
-      rocks = data.rocks;
+      let scaleX = logicalWidth / data.hostWidth;
       
-      // FECHA O MODAL IMEDIATAMENTE ASSIM QUE O MAPA CHEGA NO CONVIDADO
+      terrainHeights = new Float32Array(Math.ceil(logicalWidth) + 1);
+      let rawH = data.terrainHeights;
+      for(let x=0; x<=logicalWidth; x++) {
+        let srcX = Math.min(rawH.length - 1, Math.floor(x / scaleX));
+        terrainHeights[x] = rawH[srcX];
+      }
+
+      tanks = data.tanks.map(tk => ({...tk, x: tk.x * scaleX}));
+      peakXsCache = data.peakXsCache.map(px => px * scaleX);
+      rocks = data.rocks.map(r => ({...r, x: r.x * scaleX, peakRef: r.peakRef * scaleX}));
+
       const modal = document.getElementById('gameModal');
       if(modal) {
         modal.classList.remove('active');
@@ -821,13 +829,7 @@ function startMultiplayerGame() {
   isMultiplayer = true;
   if(isHost && conn) { 
     conn.send({type: 'START'}); 
-    conn.send({
-      type: 'STAGE_DATA',
-      terrainHeights: Array.from(terrainHeights),
-      tanks: tanks,
-      peakXsCache: peakXsCache,
-      rocks: rocks
-    });
+    sendStageDataToClient();
   }
   
   const modal = document.getElementById('gameModal');
