@@ -65,7 +65,7 @@ canvas{width:100%;height:100%;display:block}
     <div class="modal-title" id="modalTitle">⚔️ MODO MULTIPLAYER WI-FI</div>
     <div class="modal-desc" id="modalDesc">Escolha como deseja jogar com seus amigos na mesma rede Wi-Fi:</div>
     <div class="modal-btns" id="menuButtons">
-      <button class="btn-modal" onclick="hostGame()">Criar Sala (Host / TV)</button>
+      <button class="btn-modal" onclick="showHostPrompt()">Criar Sala (Host / TV)</button>
       <button class="btn-modal secondary" onclick="showJoinPrompt()">Entrar em Sala (Celular)</button>
       <button class="btn-modal" style="background:#555;font-size:10px;padding:6px;" onclick="startSinglePlayer()">Jogar Sozinho (Modo IA)</button>
     </div>
@@ -78,12 +78,11 @@ canvas{width:100%;height:100%;display:block}
 </div>
 
 <script>
-// CONFIGURAÇÃO MULTIPLAYER PEERJS (WI-FI)
 let peer = null;
 let conn = null;
 let isHost = false;
 let isMultiplayer = false;
-let localPlayerId = 0; // 0 = Jogador 1 (Verde), 1 = Jogador 2 (Vermelho)
+let localPlayerId = 0; 
 
 const bgMusic = new Audio('the_big_fight.mp3..oga');
 bgMusic.loop = true;
@@ -683,36 +682,49 @@ selectWeaponIndex(Number(b.dataset.weapon));
 });
 });
 
-// FUNÇÕES DE REDE MULTIPLAYER WI-FI
-function hostGame() {
+// ADICIONADO: Tela para digitar o nome da sala personalizado
+function showHostPrompt() {
+  document.getElementById('modalTitle').textContent = '📡 CRIAR SALA';
+  document.getElementById('modalDesc').innerHTML = `Digite um código curto para a sua sala (ex: SALA1):<br><br><input type="text" id="customRoomIdInput" class="net-input" placeholder="Ex: SALA1">`;
+  document.getElementById('menuButtons').innerHTML = `<button class="btn-modal" onclick="hostCustomGame()">CRIAR E INICIAR</button><button class="btn-modal secondary" onclick="location.reload()">VOLTAR</button>`;
+}
+
+function hostCustomGame() {
+  const customId = document.getElementById('customRoomIdInput').value.trim();
+  if(!customId) return alert('Digite um código válido para a sala!');
+
   isMultiplayer = true;
   isHost = true;
   localPlayerId = 0;
   
-  peer = new Peer();
+  peer = new Peer(customId);
   peer.on('open', (id) => {
     document.getElementById('modalTitle').textContent = '📡 SALA CRIADA!';
-    document.getElementById('modalDesc').innerHTML = `Código da sua sala Wi-Fi:<br><b style="font-size:22px;color:#f1c40f;">${id}</b><br><br>Digite este código no celular do seu amigo para conectar!`;
+    document.getElementById('modalDesc').innerHTML = `Código da sua sala:<br><b style="font-size:22px;color:#f1c40f;">${id}</b><br><br>Aguardando o seu amigo entrar...`;
     document.getElementById('menuButtons').innerHTML = `<button class="btn-modal" onclick="startMultiplayerGame()">INICIAR PARTIDA</button>`;
+  });
+
+  peer.on('error', (err) => {
+    alert('Esse código de sala já está em uso ou é inválido. Tente outro!');
+    location.reload();
   });
 
   peer.on('connection', (c) => {
     conn = c;
     setupConnectionListeners();
-    alert('Amigo conectado com sucesso via Wi-Fi!');
     startMultiplayerGame();
   });
 }
 
 function showJoinPrompt() {
   document.getElementById('modalTitle').textContent = '🔗 ENTRAR EM SALA';
-  document.getElementById('modalDesc').innerHTML = `Digite o código da sala do Host (TV ou outro celular):<br><br><input type="text" id="roomIdInput" class="net-input" placeholder="Cole o código aqui">`;
+  document.getElementById('modalDesc').innerHTML = `Digite o código curto da sala do Host:<br><br><input type="text" id="roomIdInput" class="net-input" placeholder="Ex: SALA1">`;
   document.getElementById('menuButtons').innerHTML = `<button class="btn-modal" onclick="joinGame()">CONECTAR</button><button class="btn-modal secondary" onclick="location.reload()">VOLTAR</button>`;
 }
 
 function joinGame() {
   const roomId = document.getElementById('roomIdInput').value.trim();
-  if(!roomId) return alert('Digite um código válido!');
+  if(!roomId) return alert('Digite o código da sala!');
   
   isMultiplayer = true;
   isHost = false;
@@ -723,7 +735,7 @@ function joinGame() {
     conn = peer.connect(roomId);
     setupConnectionListeners();
     document.getElementById('modalTitle').textContent = '⌛ CONECTANDO...';
-    document.getElementById('modalDesc').textContent = 'Aguardando conexão com o Host...';
+    document.getElementById('modalDesc').textContent = 'Aguardando sincronização...';
     document.getElementById('menuButtons').innerHTML = '';
   });
 }
@@ -750,7 +762,13 @@ function setupConnectionListeners() {
 function startMultiplayerGame() {
   isMultiplayer = true;
   if(isHost && conn) { conn.send({type: 'START'}); }
-  document.getElementById('gameModal').classList.remove('active');
+  
+  const modal = document.getElementById('gameModal');
+  if(modal) {
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+  }
+
   initStage();
   updateHealthBars();
   isShooting = false;
@@ -759,7 +777,11 @@ function startMultiplayerGame() {
 
 function startSinglePlayer() {
   isMultiplayer = false;
-  document.getElementById('gameModal').classList.remove('active');
+  const modal = document.getElementById('gameModal');
+  if(modal) {
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+  }
   initStage();
   updateHealthBars();
   isShooting = false;
