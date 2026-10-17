@@ -22,32 +22,32 @@ html,body{background:#0a0714;width:100vw;height:100vh;display:flex;flex-directio
 .turn-line{width:100%;padding:4px 6px;text-align:center;background:linear-gradient(90deg,rgba(241,196,15,.15),rgba(241,196,15,.05));color:#f1c40f;font-weight:700;font-size:10px;letter-spacing:0.5px;border-bottom:1px solid rgba(241,196,15,.1);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .canvas-container{flex:1;display:flex;justify-content:center;align-items:center;position:relative;overflow:hidden;width:100%}
 canvas{width:100%;height:100%;display:block}
-.controls{width:100%;padding:6px 10px;background:rgba(18,13,32,.98);border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:60px;flex-shrink:0}
-.pad-group{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.04);padding:4px 6px;border-radius:10px;border:1px solid rgba(255,255,255,.08)}
-.pad-label{color:#888;font-size:8px;font-weight:800;letter-spacing:1px}
-.btn-game{background:linear-gradient(180deg,#3a2d5e,#2b1f47);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:8px;font-weight:700;box-shadow:0 3px 6px rgba(0,0,0,.3);transition:transform.1s;cursor:pointer;outline:none}
+.controls{width:100%;padding:8px 12px;background:rgba(18,13,32,.98);border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:65px;flex-shrink:0}
+.pad-group{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);padding:6px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.08)}
+.pad-label{color:#888;font-size:9px;font-weight:800;letter-spacing:1px}
+.btn-game{background:linear-gradient(180deg,#3a2d5e,#2b1f47);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:10px;font-weight:700;box-shadow:0 3px 6px rgba(0,0,0,.3);transition:transform.1s;cursor:pointer;outline:none}
 .btn-game:active,.btn-game.active-key{transform:scale(.93);background:#4a3a75}
-.btn-move{width:36px;height:38px;font-size:14px}
-.btn-aim{width:32px;height:38px;font-size:12px}
-.btn-fire-direct{width:54px;height:38px;background:linear-gradient(180deg,#ffd32a,#ff6b00);color:#000;font-weight:900;border:none;border-radius:10px;box-shadow:0 0 14px rgba(255,107,0,.5),0 3px 6px rgba(0,0,0,.3);font-size:10px;line-height:1.1;transition:transform.1s;cursor:pointer;outline:none}
+.btn-move{width:40px;height:42px;font-size:15px}
+.btn-aim{width:36px;height:42px;font-size:13px}
+.btn-fire-direct{width:60px;height:42px;background:linear-gradient(180deg,#ffd32a,#ff6b00);color:#000;font-weight:900;border:none;border-radius:12px;box-shadow:0 0 14px rgba(255,107,0,.5),0 3px 6px rgba(0,0,0,.3);font-size:11px;line-height:1.1;transition:transform.1s;cursor:pointer;outline:none}
 .btn-fire-direct:active,.btn-fire-direct.active-key{transform:scale(.92)}
-.ammo-btn{width:32px;height:38px;border-radius:8px;background:#2b1f47;color:#fff;font-size:14px;border:1px solid rgba(255,255,255,.1);cursor:pointer;outline:none}
-.ammo-btn.active{background:linear-gradient(180deg,#f1c40f,#d48806);color:#000;box-shadow:0 0 10px rgba(241,196,15,.6);border:none}
-.ammo-btn.red-ammo.active{background:linear-gradient(180deg,#ff4757,#e74c3c);color:#fff;box-shadow:0 0 10px rgba(231,76,60,.8)}
-.ammo-btn.green-ammo.active{background:linear-gradient(180deg,#2ecc71,#27ae60);color:#fff;box-shadow:0 0 10px rgba(46,204,113,.8)}
-.ammo-btn.yellow-ammo.active{background:linear-gradient(180deg,#f1c40f,#f39c12);color:#000;box-shadow:0 0 10px rgba(241,196,15,.9)}
+.ammo-btn{width:38px;height:42px;border-radius:10px;background:#2b1f47;color:#fff;font-size:16px;border:2px solid rgba(255,255,255,.15);cursor:pointer;outline:none;transition:all.2s}
+.ammo-btn.active{background:linear-gradient(180deg,#f1c40f,#d48806);color:#000;box-shadow:0 0 12px rgba(241,196,15,.8);border-color:#fff}
+.ammo-btn.red-ammo.active{background:linear-gradient(180deg,#ff4757,#e74c3c);color:#fff;box-shadow:0 0 12px rgba(231,76,60,.9);border-color:#fff}
+.ammo-btn.green-ammo.active{background:linear-gradient(180deg,#2ecc71,#27ae60);color:#fff;box-shadow:0 0 12px rgba(46,204,113,.9);border-color:#fff}
+.ammo-btn.yellow-ammo.active{background:linear-gradient(180deg,#f1c40f,#f39c12);color:#000;box-shadow:0 0 12px rgba(241,196,15,.9);border-color:#fff}
 .ammo-btn:disabled{opacity:0.3;cursor:not-allowed}
 .ai-ammo-indicator{position:absolute;top:8px;right:8px;background:rgba(231,76,60,.95);color:#fff;padding:4px 10px;border-radius:16px;font-size:10px;font-weight:700;display:none;box-shadow:0 4px 12px rgba(0,0,0,.4);z-index:15}
-.modal-overlay{position:absolute;inset:0;background:rgba(5,3,12,.9);backdrop-filter:blur(8px);display:flex;justify-content:center;align-items:center;z-index:100;opacity:0;pointer-events:none;transition:opacity.3s}
+.modal-overlay{position:absolute;inset:0;background:rgba(5,3,12,.92);backdrop-filter:blur(8px);display:flex;justify-content:center;align-items:center;z-index:100;opacity:0;pointer-events:none;transition:opacity.3s}
 .modal-overlay.active{opacity:1;pointer-events:auto}
-.modal-card{background:linear-gradient(180deg,#241b3f,#1a132e);border:2px solid #f1c40f;border-radius:18px;padding:20px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 30px rgba(241,196,15,.2);width:310px;display:flex;flex-direction:column;gap:10px}
+.modal-card{background:linear-gradient(180deg,#241b3f,#1a132e);border:2px solid #f1c40f;border-radius:18px;padding:22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 30px rgba(241,196,15,.2);width:320px;display:flex;flex-direction:column;gap:12px}
 .modal-title{font-size:18px;font-weight:900;color:#fff}
 .modal-desc{color:#b8b0d0;font-size:12px}
-.modal-btns{display:flex;flex-direction:column;gap:8px}
-.btn-modal{background:linear-gradient(180deg,#00d26a,#27ae60);color:#fff;border:none;padding:10px;font-size:12px;font-weight:800;border-radius:8px;cursor:pointer;width:100%}
+.modal-btns{display:flex;flex-direction:column;gap:10px}
+.btn-modal{background:linear-gradient(180deg,#00d26a,#27ae60);color:#fff;border:none;padding:12px;font-size:13px;font-weight:800;border-radius:10px;cursor:pointer;width:100%;box-shadow:0 4px 10px rgba(0,0,0,.3)}
 .btn-modal.secondary{background:linear-gradient(180deg,#3498db,#2471a3)}
-.net-input{width:100%;padding:8px;border-radius:6px;border:1px solid #4a3a75;background:#140e22;color:#fff;text-align:center;font-size:14px;outline:none}
-#powerText{font-size:8px;font-weight:900}
+.net-input{width:100%;padding:10px;border-radius:8px;border:2px solid #4a3a75;background:#140e22;color:#fff;text-align:center;font-size:15px;outline:none}
+#powerText{font-size:9px;font-weight:900}
 </style>
 </head>
 <body oncontextmenu="return false;">
@@ -65,9 +65,9 @@ canvas{width:100%;height:100%;display:block}
     <div class="modal-title" id="modalTitle">⚔️ MODO MULTIPLAYER WI-FI</div>
     <div class="modal-desc" id="modalDesc">Escolha como deseja jogar com seus amigos na mesma rede Wi-Fi:</div>
     <div class="modal-btns" id="menuButtons">
-      <button class="btn-modal" onclick="showHostPrompt()">Criar Sala (Host / TV)</button>
-      <button class="btn-modal secondary" onclick="showJoinPrompt()">Entrar em Sala (Celular)</button>
-      <button class="btn-modal" style="background:#555;font-size:10px;padding:6px;" onclick="startSinglePlayer()">Jogar Sozinho (Modo IA)</button>
+      <button class="btn-modal" onclick="showHostPrompt()">Criar Sala (Host)</button>
+      <button class="btn-modal secondary" onclick="showJoinPrompt()">Entrar em Sala (Convidado)</button>
+      <button class="btn-modal" style="background:#555;font-size:11px;padding:8px;" onclick="startSinglePlayer()">Jogar Sozinho (Modo IA)</button>
     </div>
   </div>
 </div>
@@ -101,8 +101,6 @@ const AudioFX={ctx:null,init(){if(!this.ctx)this.ctx=new(window.AudioContext||wi
 
 const canvas=document.getElementById('gameCanvas');const container=document.getElementById('canvasContainer');const ctx=canvas.getContext('2d');
 let dpr=window.devicePixelRatio||1,logicalWidth=0,logicalHeight=0,currentStage=1;const maxStages=20;let matchTime=0;const totalDayDuration=90;
-const aiGlobalBrain={redTanks:{},successfulShotsMemory:[]};
-function getOrCreateAiBrain(id){if(!aiGlobalBrain.redTanks[id])aiGlobalBrain.redTanks[id]={powerCorrection:0,angleCorrection:0,score:0,shotsCount:0,lastShotInfo:null,wasHitLastTurn:false};return aiGlobalBrain.redTanks[id];}
 
 function resizeCanvas(){
 dpr=window.devicePixelRatio||1;
@@ -147,9 +145,9 @@ rocks.push({x:c,y:getTerrainY(c)-7,vx:0,vy:0,angle:Math.random()*Math.PI,radius:
 });
 tanks=[];
 tanks.push({id:0,team:'green',isPlayer:true,x:30,y:0,width:20,height:28,angle:45,power:40,health:100,color:'#2ecc71',targetX:0,isMoving:false,walkCycle:0,shootTimer:0,facing:1,specialUsed:false});
-tanks.push({id:1,team:'red',isPlayer:false,x:logicalWidth-50,y:0,width:20,height:28,angle:45,power:40,health:100,color:'#e74c3c',targetX:0,isMoving:false,walkCycle:0,shootTimer:0,facing:-1,brain:getOrCreateAiBrain(1),specialUsed:false});
+tanks.push({id:1,team:'red',isPlayer:false,x:logicalWidth-50,y:0,width:20,height:28,angle:45,power:40,health:100,color:'#e74c3c',targetX:0,isMoving:false,walkCycle:0,shootTimer:0,facing:-1,specialUsed:false});
 
-document.getElementById('playerTeamLabel').textContent=isMultiplayer?(localPlayerId===0?'🟢 JOGADOR 1':'🔴 JOGADOR 2'):'🟢 VOCÊ';
+document.getElementById('playerTeamLabel').textContent=isMultiplayer?(localPlayerId===0?'🟢 JOGADOR 1':'🔴 JOGADOR 2'):'🟢 JOGADOR 1';
 document.getElementById('enemyTeamLabel').textContent=isMultiplayer?(localPlayerId===0?'🔴 JOGADOR 2':'🟢 JOGADOR 1'):'🤖 ROBÔ';
 
 tanks.forEach(t=>updateTankY(t));currentTankIndex=0;effects=[];matchTime=0;
@@ -239,8 +237,8 @@ const sy = t.y + 10;
 projectiles=[];
 
 if(wi===2){
-const tgtX = (isMultiplayer) ? tx : (t.isPlayer ? targetCursor.x : (t.aiTargetX || logicalWidth/2));
-const tgtY = (isMultiplayer) ? ty : (t.isPlayer ? targetCursor.y : (t.aiTargetY || logicalHeight/2));
+const tgtX = (isMultiplayer) ? tx : (t.isPlayer ? targetCursor.x : (logicalWidth/2));
+const tgtY = (isMultiplayer) ? ty : (t.isPlayer ? targetCursor.y : (logicalHeight/2));
 targetCursor.active = false;
 
 for(let i=-1; i<=1; i++){
@@ -550,13 +548,11 @@ if(isMultiplayer){
 }
 }
 
-// NOVA INTELIGÊNCIA ARTIFICIAL REAL E ESTRATÉGICA
 function executeAIShot(at){
 if(at.health<=0)return;
 const targets=tanks.filter(t=>t.team!==at.team&&t.health>0);
 if(!targets.length)return;
 
-// Escolhe o alvo mais próximo
 let target = targets[0];
 let minDist = Math.abs((target.x + target.width/2) - (at.x + at.width/2));
 targets.forEach(t => {
@@ -566,11 +562,8 @@ targets.forEach(t => {
 
 const tcx = target.x + target.width/2;
 const acx = at.x + at.width/2;
-
-// Define a direção correta para o robô olhar
 at.facing = (tcx > acx) ? 1 : -1;
 
-// Inteligência de cálculo balístico baseada na distância horizontal
 let distance = Math.abs(tcx - acx);
 let calculatedAngle = 45;
 let calculatedPower = 40;
@@ -586,7 +579,6 @@ if (distance < 100) {
   calculatedPower = 60 + (distance * 0.1);
 }
 
-// Adiciona um fator pequeno de erro humano realista para não ser imbatível
 at.angle = Math.max(10, Math.min(80, calculatedAngle + (Math.random() * 6 - 3)));
 at.power = Math.max(20, Math.min(95, calculatedPower + (Math.random() * 8 - 4)));
 
@@ -594,10 +586,6 @@ document.getElementById('aiAmmoIndicator').textContent=`🤖 Robô mirou (Força
 document.getElementById('aiAmmoIndicator').style.display='block';
 
 fireProjectile();
-}
-
-function updateAI(){
-// Sem IA em multiplayer local PvP
 }
 
 function updateHealthBars(){
@@ -610,8 +598,8 @@ document.getElementById('healthRed').style.width=`${Math.max(0,ra)}%`;
 function checkWin(){
 let ga=tanks[0]?tanks[0].health:0;
 let ra=tanks[1]?tanks[1].health:0;
-if(ga<=0){showModal('🔴 ROBÔ VENCEU!','O seu tanque foi destruído.',false);return true;}
-if(ra<=0){showModal('🟢 VOCÊ VENCEU!','O robô foi destruído com sucesso!',false);return true;}
+if(ga<=0){showModal('🔴 FIM DE JOGO','Jogador 2 Venceu!',false);return true;}
+if(ra<=0){showModal('🟢 FIM DE JOGO','Jogador 1 Venceu!',false);return true;}
 return false;
 }
 
@@ -628,11 +616,11 @@ function voltarAoMenu() {
   conn = null;
   
   document.getElementById('modalTitle').textContent = '⚔️ MODO MULTIPLAYER WI-FI';
-  document.getElementById('modalDesc').textContent = 'Escolha como deseja jogar com seus amigos na mesma rede Wi-Fi:';
+  document.getElementById('modalDesc').textContent = 'Escolha como deseja jogar na sua TV ou com amigos na mesma rede Wi-Fi:';
   document.getElementById('menuButtons').innerHTML = `
-    <button class="btn-modal" onclick="showHostPrompt()">Criar Sala (Host / TV)</button>
-    <button class="btn-modal secondary" onclick="showJoinPrompt()">Entrar em Sala (Celular)</button>
-    <button class="btn-modal" style="background:#555;font-size:10px;padding:6px;" onclick="startSinglePlayer()">Jogar Sozinho (Modo IA)</button>
+    <button class="btn-modal" onclick="showHostPrompt()">Criar Sala (Host)</button>
+    <button class="btn-modal secondary" onclick="showJoinPrompt()">Entrar em Sala (Convidado)</button>
+    <button class="btn-modal" style="background:#555;font-size:11px;padding:8px;" onclick="startSinglePlayer()">Jogar Sozinho (Modo IA)</button>
   `;
   document.getElementById('gameModal').classList.add('active');
 }
@@ -721,7 +709,8 @@ targetCursor.active = false;
 }
 
 document.querySelectorAll('.ammo-btn').forEach(b=>{
-b.addEventListener('click',()=>{
+b.addEventListener('pointerdown',e=>{
+e.preventDefault();
 selectWeaponIndex(Number(b.dataset.weapon));
 });
 });
@@ -755,7 +744,18 @@ function hostCustomGame() {
   peer.on('connection', (c) => {
     conn = c;
     setupConnectionListeners();
-    startMultiplayerGame();
+    // O Host envia o mapa imediatamente ao conectar o amigo
+    setTimeout(() => {
+      if(conn && isHost) {
+        conn.send({
+          type: 'STAGE_DATA',
+          terrainHeights: Array.from(terrainHeights),
+          tanks: tanks,
+          peakXsCache: peakXsCache,
+          rocks: rocks
+        });
+      }
+    }, 500);
   });
 }
 
@@ -790,6 +790,16 @@ function setupConnectionListeners() {
       tanks = data.tanks;
       peakXsCache = data.peakXsCache;
       rocks = data.rocks;
+      
+      // FECHA O MODAL IMEDIATAMENTE ASSIM QUE O MAPA CHEGA NO CONVIDADO
+      const modal = document.getElementById('gameModal');
+      if(modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+      }
+      updateHealthBars();
+      isShooting = false;
+      projectiles = [];
     } else if(data.type === 'MOVE') {
       let t = tanks[data.tankIndex];
       if(t) { t.x = data.x; t.facing = data.facing; t.isMoving = true; updateTankY(t); }
