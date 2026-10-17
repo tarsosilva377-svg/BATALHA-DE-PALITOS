@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>⚔️ Batalha de Palitos - IA Estratégica & Smart TV Controls</title>
+<title>⚔️ Batalha de Palitos - Multiplayer Wi-Fi</title>
+<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;-webkit-tap-highlight-color:transparent;user-select:none}
 html,body{background:#0a0714;width:100vw;height:100vh;display:flex;flex-direction:column;overflow:hidden}
@@ -39,26 +40,37 @@ canvas{width:100%;height:100%;display:block}
 .ai-ammo-indicator{position:absolute;top:8px;right:8px;background:rgba(231,76,60,.95);color:#fff;padding:4px 10px;border-radius:16px;font-size:10px;font-weight:700;display:none;box-shadow:0 4px 12px rgba(0,0,0,.4);z-index:15}
 .modal-overlay{position:absolute;inset:0;background:rgba(5,3,12,.9);backdrop-filter:blur(8px);display:flex;justify-content:center;align-items:center;z-index:100;opacity:0;pointer-events:none;transition:opacity.3s}
 .modal-overlay.active{opacity:1;pointer-events:auto}
-.modal-card{background:linear-gradient(180deg,#241b3f,#1a132e);border:2px solid #f1c40f;border-radius:18px;padding:20px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 30px rgba(241,196,15,.2);width:290px;display:flex;flex-direction:column;gap:10px}
+.modal-card{background:linear-gradient(180deg,#241b3f,#1a132e);border:2px solid #f1c40f;border-radius:18px;padding:20px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 30px rgba(241,196,15,.2);width:310px;display:flex;flex-direction:column;gap:10px}
 .modal-title{font-size:18px;font-weight:900;color:#fff}
 .modal-desc{color:#b8b0d0;font-size:12px}
-.modal-btns{display:flex;gap:8px}
-.btn-modal{background:linear-gradient(180deg,#00d26a,#27ae60);color:#fff;border:none;padding:10px;font-size:12px;font-weight:800;border-radius:8px;cursor:pointer;flex:1}
+.modal-btns{display:flex;flex-direction:column;gap:8px}
+.btn-modal{background:linear-gradient(180deg,#00d26a,#27ae60);color:#fff;border:none;padding:10px;font-size:12px;font-weight:800;border-radius:8px;cursor:pointer;width:100%}
 .btn-modal.secondary{background:linear-gradient(180deg,#3498db,#2471a3)}
+.net-input{width:100%;padding:8px;border-radius:6px;border:1px solid #4a3a75;background:#140e22;color:#fff;text-align:center;font-size:14px;outline:none}
 #powerText{font-size:8px;font-weight:900}
 </style>
 </head>
 <body oncontextmenu="return false;">
 <div class="health-top">
-<div class="player-box"><span class="player-label" id="playerTeamLabel">🟢 VOCÊ</span><div class="health-bar"><div id="healthGreen" class="health-fill green-fill" style="width:100%"></div></div></div>
+<div class="player-box"><span class="player-label" id="playerTeamLabel">🟢 JOGADOR 1</span><div class="health-bar"><div id="healthGreen" class="health-fill green-fill" style="width:100%"></div></div></div>
 <div class="center-info"><div class="vs-text" id="stageIndicator">⚔️ FASE 1/20</div><div class="time-text" id="timeIndicator">🌙 00:00</div></div>
-<div class="player-box right"><span class="player-label" id="enemyTeamLabel">🤖 ROBO</span><div class="health-bar"><div id="healthRed" class="health-fill red-fill" style="width:100%"></div></div></div>
+<div class="player-box right"><span class="player-label" id="enemyTeamLabel">🔴 JOGADOR 2</span><div class="health-bar"><div id="healthRed" class="health-fill red-fill" style="width:100%"></div></div></div>
 </div>
 <div class="turn-line" id="turnIndicator">🟢 SUA VEZ — [🛈 Mover: 4 / 6 | Mira: 2 / 8 | Força: 1 / 3 | Atirar: 5 | Munição: 🔴 / 🟢 / 🟡]</div>
 <div class="canvas-container" id="canvasContainer">
-<div class="ai-ammo-indicator" id="aiAmmoIndicator">🤖 IA equipou: ⚫</div>
+<div class="ai-ammo-indicator" id="aiAmmoIndicator">🤖 Jogador equipou: ⚫</div>
 <canvas id="gameCanvas"></canvas>
-<div class="modal-overlay" id="gameModal"><div class="modal-card"><div class="modal-title" id="modalTitle">🎉 FASE CONCLUÍDA!</div><div class="modal-desc" id="modalDesc"></div><div class="modal-btns"><button class="btn-modal secondary" id="btnContinue" onclick="nextStage()">CONTINUAR</button><button class="btn-modal" onclick="resetGame(true)">JOGAR DE NOVO</button></div></div></div>
+<div class="modal-overlay active" id="gameModal">
+  <div class="modal-card">
+    <div class="modal-title" id="modalTitle">⚔️ MODO MULTIPLAYER WI-FI</div>
+    <div class="modal-desc" id="modalDesc">Escolha como deseja jogar com seus amigos na mesma rede Wi-Fi:</div>
+    <div class="modal-btns" id="menuButtons">
+      <button class="btn-modal" onclick="hostGame()">Criar Sala (Host / TV)</button>
+      <button class="btn-modal secondary" onclick="showJoinPrompt()">Entrar em Sala (Celular)</button>
+      <button class="btn-modal" style="background:#555;font-size:10px;padding:6px;" onclick="startSinglePlayer()">Jogar Sozinho (Modo IA)</button>
+    </div>
+  </div>
+</div>
 </div>
 <div class="controls">
 <div class="pad-group"><span class="pad-label">MOV</span><button class="btn-game btn-move" id="moveLeftBtn" title="Tecla 4">◀ (4)</button><button class="btn-game btn-aim" id="forceMinusBtn" title="Tecla 1">➖ (1)</button><button class="btn-fire-direct" id="fireBtn" title="Tecla 5 / OK / Espaço">🔥<br><span id="powerText">40%</span></button><button class="btn-game btn-aim" id="forcePlusBtn" title="Tecla 3">➕ (3)</button><button class="btn-game btn-move" id="moveRightBtn" title="Tecla 6">▶ (6)</button></div>
@@ -66,7 +78,13 @@ canvas{width:100%;height:100%;display:block}
 </div>
 
 <script>
-// TRILHA SONORA DE FUNDO (Volume regulado para 10%)
+// CONFIGURAÇÃO MULTIPLAYER PEERJS (WI-FI)
+let peer = null;
+let conn = null;
+let isHost = false;
+let isMultiplayer = false;
+let localPlayerId = 0; // 0 = Jogador 1 (Verde), 1 = Jogador 2 (Vermelho)
+
 const bgMusic = new Audio('the_big_fight.mp3..oga');
 bgMusic.loop = true;
 bgMusic.volume = 0.1;
@@ -74,15 +92,14 @@ bgMusic.volume = 0.1;
 let musicStarted = false;
 function startBgMusic() {
     if (!musicStarted) {
-        bgMusic.play().then(() => {
-            musicStarted = true;
-        }).catch(() => {});
+        bgMusic.play().then(() => { musicStarted = true; }).catch(() => {});
     }
 }
 window.addEventListener('click', startBgMusic, { once: true });
 window.addEventListener('keydown', startBgMusic, { once: true });
 
 const AudioFX={ctx:null,init(){if(!this.ctx)this.ctx=new(window.AudioContext||window.webkitAudioContext)();if(this.ctx.state==='suspended')this.ctx.resume();},playShoot(){this.init();const n=this.ctx.currentTime,o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type='triangle';o.frequency.setValueAtTime(300,n);o.frequency.exponentialRampToValueAtTime(40,n+.25);g.gain.setValueAtTime(.8,n);g.gain.exponentialRampToValueAtTime(.01,n+.25);o.connect(g);g.connect(this.ctx.destination);o.start(n);o.stop(n+.25);},playTargetLock(){this.init();const n=this.ctx.currentTime,o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type='sine';o.frequency.setValueAtTime(800,n);o.frequency.setValueAtTime(1200,n+.08);g.gain.setValueAtTime(.3,n);g.gain.exponentialRampToValueAtTime(.01,n+.15);o.connect(g);g.connect(this.ctx.destination);o.start(n);o.stop(n+.15);},playExplosion(){this.init();const n=this.ctx.currentTime,s=this.ctx.sampleRate*.5,b=this.ctx.createBuffer(1,s,this.ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<s;i++)d[i]=Math.random()*2-1;const w=this.ctx.createBufferSource();w.buffer=b;const f=this.ctx.createBiquadFilter();f.type='lowpass';f.frequency.setValueAtTime(800,n);f.frequency.exponentialRampToValueAtTime(30,n+.5);const g=this.ctx.createGain();g.gain.setValueAtTime(1,n);g.gain.exponentialRampToValueAtTime(.01,n+.5);w.connect(f);f.connect(g);g.connect(this.ctx.destination);w.start(n);w.stop(n+.5);}};
+
 const canvas=document.getElementById('gameCanvas');const container=document.getElementById('canvasContainer');const ctx=canvas.getContext('2d');
 let dpr=window.devicePixelRatio||1,logicalWidth=0,logicalHeight=0,currentStage=1;const maxStages=20;let matchTime=0;const totalDayDuration=90;
 const aiGlobalBrain={redTanks:{},successfulShotsMemory:[]};
@@ -128,7 +145,7 @@ rocks.push({x:a,y:getTerrainY(a)-6,vx:0,vy:0,angle:Math.random()*Math.PI,radius:
 rocks.push({x:c,y:getTerrainY(c)-7,vx:0,vy:0,angle:Math.random()*Math.PI,radius:7,peakRef:px,vertices:generateIrregularVertices(7)});
 });
 tanks=[];
-if(currentStage===20){
+if(currentStage===20 && !isMultiplayer){
 tanks.push({id:0,team:'green',isPlayer:true,x:20,y:0,width:20,height:28,angle:60,power:55,health:100,color:'#2ecc71',targetX:0,isMoving:false,walkCycle:0,shootTimer:0,facing:1,specialUsed:false});
 tanks.push({id:1,team:'green',isPlayer:false,x:55,y:0,width:20,height:28,angle:60,power:55,health:100,color:'#27ae60',targetX:0,isMoving:false,walkCycle:0,shootTimer:0,facing:1,brain:getOrCreateAiBrain(1),specialUsed:false});
 tanks.push({id:2,team:'green',isPlayer:false,x:90,y:0,width:20,height:28,angle:60,power:60,health:100,color:'#1abc9c',targetX:0,isMoving:false,walkCycle:0,shootTimer:0,facing:1,brain:getOrCreateAiBrain(2),specialUsed:false});
@@ -140,8 +157,9 @@ tanks.push({id:7,team:'red',isPlayer:false,x:logicalWidth-145,y:0,width:20,heigh
 document.getElementById('playerTeamLabel').textContent='🟢 ESQUADRÃO';document.getElementById('enemyTeamLabel').textContent='🤖 INIMIGOS (4)';
 }else{
 tanks.push({id:0,team:'green',isPlayer:true,x:30,y:0,width:20,height:28,angle:45,power:40,health:100,color:'#2ecc71',targetX:0,isMoving:false,walkCycle:0,shootTimer:0,facing:1,specialUsed:false});
-tanks.push({id:4,team:'red',isPlayer:false,x:logicalWidth-50,y:0,width:20,height:28,angle:45,power:40,health:100,color:'#e74c3c',targetX:0,isMoving:false,walkCycle:0,shootTimer:0,facing:-1,brain:getOrCreateAiBrain(4),specialUsed:false});
-document.getElementById('playerTeamLabel').textContent='🟢 VOCÊ';document.getElementById('enemyTeamLabel').textContent='🤖 ROBO';
+tanks.push({id:1,team:'red',isPlayer:false,x:logicalWidth-50,y:0,width:20,height:28,angle:45,power:40,health:100,color:'#e74c3c',targetX:0,isMoving:false,walkCycle:0,shootTimer:0,facing:-1,brain:getOrCreateAiBrain(1),specialUsed:false});
+document.getElementById('playerTeamLabel').textContent=isMultiplayer?(localPlayerId===0?'🟢 JOGADOR 1':'🔴 JOGADOR 2'):'🟢 VOCÊ';
+document.getElementById('enemyTeamLabel').textContent=isMultiplayer?(localPlayerId===0?'🔴 JOGADOR 2':'🟢 JOGADOR 1'):'🤖 ROBO';
 }
 tanks.forEach(t=>updateTankY(t));currentTankIndex=0;effects=[];matchTime=0;
 document.getElementById('stageIndicator').textContent=`⚔️ FASE ${currentStage}/${maxStages}`;
@@ -180,8 +198,10 @@ let targetCursor={x:0,y:0,active:false};
 function fireProjectile(){
 if(isShooting)return;
 let t=tanks[currentTankIndex];
+if(isMultiplayer && ((localPlayerId === 0 && t.team !== 'green') || (localPlayerId === 1 && t.team !== 'red'))) return;
+
 let wi=selectedWeapon;
-if(!t.isPlayer){
+if(!t.isPlayer && !isMultiplayer){
 wi=t.chosenWeapon!==undefined?t.chosenWeapon:0;
 document.getElementById('aiAmmoIndicator').textContent=`🤖 IA equipou: ${weapons[wi].symbol}`;
 document.getElementById('aiAmmoIndicator').style.display='block';
@@ -190,8 +210,23 @@ document.getElementById('aiAmmoIndicator').style.display='block';
 if(wi===2){
 if(t.specialUsed)return;
 t.specialUsed=true;
-if(t.isPlayer) document.getElementById('yellowAmmoBtn').disabled = true;
+if(t.isPlayer || (isMultiplayer && t.id === localPlayerId)) document.getElementById('yellowAmmoBtn').disabled = true;
 }
+
+if(isMultiplayer && isHost){
+  conn && conn.send({type:'FIRE', tankIndex: currentTankIndex, weapon: wi, angle: t.angle, power: t.power, targetX: targetCursor.x, targetY: targetCursor.y});
+} else if(isMultiplayer && !isHost) {
+  conn && conn.send({type:'FIRE', tankIndex: currentTankIndex, weapon: wi, angle: t.angle, power: t.power, targetX: targetCursor.x, targetY: targetCursor.y});
+}
+
+executeFireAction(currentTankIndex, wi, t.angle, t.power, targetCursor.x, targetCursor.y);
+}
+
+function executeFireAction(tankIdx, wi, ang, pow, tx, ty){
+let t = tanks[tankIdx];
+if(!t || t.health <= 0) return;
+t.angle = ang;
+t.power = pow;
 
 isShooting=true;AudioFX.playShoot();
 t.shootTimer=18;
@@ -205,8 +240,8 @@ const sy = t.y + 10;
 projectiles=[];
 
 if(wi===2){
-const tx = t.isPlayer ? targetCursor.x : (t.aiTargetX || logicalWidth/2);
-const ty = t.isPlayer ? targetCursor.y : (t.aiTargetY || logicalHeight/2);
+const tgtX = (isMultiplayer) ? tx : (t.isPlayer ? targetCursor.x : (t.aiTargetX || logicalWidth/2));
+const tgtY = (isMultiplayer) ? ty : (t.isPlayer ? targetCursor.y : (t.aiTargetY || logicalHeight/2));
 targetCursor.active = false;
 
 for(let i=-1; i<=1; i++){
@@ -219,7 +254,7 @@ vx: Math.cos(spreadAngle) * speed,
 vy: Math.sin(spreadAngle) * speed,
 radius: 3.5, explosionRadius: w.radius, gravity: 0, damage: w.damage, color: w.color,
 shooterTeam: t.team, shooterId: t.id, trail: [],
-isGuided: true, targetX: tx + (i * 12), targetY: ty,
+isGuided: true, targetX: tgtX + (i * 12), targetY: tgtY,
 lifeTime: 0
 });
 }
@@ -235,7 +270,6 @@ shooterTeam: t.team, shooterId: t.id, trail: []
 });
 }
 
-if(t.brain)t.brain.lastShotInfo={angle:t.angle,power:t.power,weaponIndex:wi,startX:t.x,startY:t.y};
 for(let p=0;p<8;p++){let fa=rad+(Math.random()*.4-.2),fs=1+Math.random()*3;effects.push({type:'fire',x:hx+Math.cos(rad)*18*t.facing,y:sy-Math.sin(rad)*18,vx:Math.cos(fa)*fs*t.facing,vy:-Math.sin(fa)*fs,life:.3,size:3+Math.random()*4,color:'#ffaa00'});}
 }
 
@@ -399,10 +433,6 @@ ctx.strokeStyle=bodyColor;ctx.lineWidth=3;
 let armX=cx+Math.cos(ar)*7*s.facing,armY=sh-Math.sin(ar)*7;
 ctx.beginPath();ctx.moveTo(cx,sh);ctx.lineTo(armX,armY);ctx.stroke();
 
-if(s.brain){
-ctx.fillStyle='#f1c40f';ctx.font='900 8px Arial';ctx.textAlign='center';
-ctx.fillText(`Pts:${s.brain.score}`,cx,s.y-8);
-}
 ctx.restore();
 }
 
@@ -468,9 +498,6 @@ if(hit){
 destroyTerrain(p.x,p.explosionRadius,p.damage);
 tanks.forEach(t=>updateTankY(t));
 
-const at=tanks.find(t=>t.id===p.shooterId);
-let td=0;
-
 tanks.forEach(t=>{
 if(t.health<=0)return;
 
@@ -485,21 +512,9 @@ if(t!==directHitTarget&&dist>12){
 dmg=Math.max(10,Math.floor(p.damage*(1-(dist/(p.explosionRadius+20)))));
 }
 
-const ad=Math.min(t.health,dmg);
 t.health=Math.max(0,t.health-dmg);
-
-if(!t.isPlayer&&t.brain&&ad>0)t.brain.wasHitLastTurn=true;
-if(at&&t.team!==at.team)td+=ad;
 }
 });
-
-if(at&&!at.isPlayer&&at.brain){
-at.brain.shotsCount++;
-if(td>0){
-at.brain.score+=Math.floor(td*2);
-aiGlobalBrain.successfulShotsMemory.push({fromX:at.x,toX:p.x,angle:at.angle,power:at.power,terrainHeightAtShot:getTerrainY(at.x)});
-}
-}
 
 updateHealthBars();
 AudioFX.playExplosion();
@@ -516,192 +531,72 @@ if(!checkWin())nextTurn();
 }
 
 function nextTurn(){
-do{currentTankIndex=(currentTankIndex+1)%tanks.length;}while(tanks[currentTankIndex].health<=0);
+currentTankIndex=(currentTankIndex+1)%tanks.length;
 const a=tanks[currentTankIndex];
-if(a.isPlayer){
-document.getElementById('turnIndicator').textContent='🟢 SUA VEZ — [🛈 Mover: 4 / 6 | Mira: 2 / 8 | Força: 1 / 3 | Atirar: 5 | Munição: 🔴 / 🟢 / 🟡]';
-document.getElementById('aiAmmoIndicator').style.display='none';
-document.getElementById('powerText').textContent=`${Math.floor(a.power)}%`;
-document.getElementById('yellowAmmoBtn').disabled = a.specialUsed;
-}else if(a.team==='green'){
-document.getElementById('turnIndicator').textContent='🟢 ALIADO ATIRANDO...';
-document.getElementById('aiAmmoIndicator').style.display='none';
-setTimeout(()=>executeAIShot(a),300);
-}else{
-document.getElementById('turnIndicator').textContent='🤖 IA SIMULANDO TRAJETÓRIA...';
-const cy=getTerrainY(a.x),ly=getTerrainY(a.x-20),ry=getTerrainY(a.x+20),ic=(ly<cy-12)&&(ry<cy-12);
-if((a.brain&&a.brain.wasHitLastTurn)||ic){
-if(a.brain)a.brain.wasHitLastTurn=false;
-const mt=(ly<ry)?(a.x-45):(a.x+45);
-a.targetX=Math.max(20,Math.min(logicalWidth-30,mt));
-a.isMoving=true;
-a.facing=(a.targetX>a.x)?1:-1;
-}else{
-a.targetX=a.x;
-setTimeout(()=>executeAIShot(a),300);
+if(isMultiplayer){
+  const myTurn = (localPlayerId === currentTankIndex);
+  document.getElementById('turnIndicator').textContent = myTurn ? '🟢 SUA VEZ — [🛈 Mover: 4 / 6 | Mira: 2 / 8 | Força: 1 / 3 | Atirar: 5]' : '⏳ VEZ DO ADVERSÁRIO...';
+  document.getElementById('powerText').textContent=`${Math.floor(a.power)}%`;
+  document.getElementById('yellowAmmoBtn').disabled = a.specialUsed;
+} else {
+  if(a.isPlayer){
+    document.getElementById('turnIndicator').textContent='🟢 SUA VEZ — [🛈 Mover: 4 / 6 | Mira: 2 / 8 | Força: 1 / 3 | Atirar: 5 | Munição: 🔴 / 🟢 / 🟡]';
+    document.getElementById('aiAmmoIndicator').style.display='none';
+    document.getElementById('powerText').textContent=`${Math.floor(a.power)}%`;
+    document.getElementById('yellowAmmoBtn').disabled = a.specialUsed;
+  } else {
+    document.getElementById('turnIndicator').textContent='🤖 IA SIMULANDO TRAJETÓRIA...';
+    setTimeout(()=>executeAIShot(a),300);
+  }
 }
-}
-}
-
-function simulateShotVirtual(shooter, ad, pv, wo) {
-const rad = ad * Math.PI / 180;
-const pm = .5 + (pv / 100) * 2.2;
-const bs = wo.speed * pm * (logicalWidth / 12);
-const hx = shooter.x + shooter.width / 2;
-const sy = shooter.y + 10;
-const spawnOffset = 18;
-
-let x = hx + Math.cos(rad) * spawnOffset * shooter.facing;
-let y = sy - Math.sin(rad) * spawnOffset;
-let vx = Math.cos(rad) * bs * shooter.facing;
-let vy = -Math.sin(rad) * bs;
-
-for (let s = 0; s < 450; s++) {
-vy += wo.gravity;
-x += vx;
-y += vy;
-
-for (let t of tanks) {
-if (t.health <= 0 || t.id === shooter.id) continue;
-const boxX = t.x - 10;
-const boxY = t.y - 10;
-const boxWidth = t.width + 20;
-const boxHeight = t.height + 20;
-
-if (x >= boxX && x <= boxX + boxWidth && y >= boxY && y <= boxY + boxHeight) {
-return { hitX: x, hitY: y, hitTank: t, directHit: true };
-}
-}
-
-if (x < 0 || x > logicalWidth || y > logicalHeight) {
-return { hitX: x, hitY: y, collidedTerrain: true };
-}
-
-const ty = getTerrainY(x);
-if (y >= ty) {
-return { hitX: x, hitY: ty, collidedTerrain: true };
-}
-}
-return { hitX: x, hitY: y, collidedTerrain: false };
 }
 
 function executeAIShot(at){
 if(at.health<=0)return;
 const en=tanks.filter(t=>t.team!==at.team&&t.health>0);
 if(!en.length)return;
-
-let tg=en[0];
-if(currentStage>=6)tg=en.reduce((l,c)=>(c.health<l.health?c:l),en[0]);
-else tg=en[Math.floor(Math.random()*en.length)];
-
-const tcx=tg.x+8, acx=at.x+8, dist=Math.abs(acx-tcx);
+let tg=en[Math.floor(Math.random()*en.length)];
+const tcx=tg.x+8, acx=at.x+8;
 at.facing=(tcx>acx)?1:-1;
-
-let cwi=0;
-if(!at.specialUsed && Math.random() > 0.4){
-cwi = 2;
-at.aiTargetX = tg.x + 8;
-at.aiTargetY = tg.y + 10;
-} else if(currentStage>=10 && (dist<140 || tg.health<=50)) {
-cwi=1;
-}
-
-at.chosenWeapon=cwi;
-const wp=weapons[cwi];
-
-let bestAngle = 45;
-let bestPower = 50;
-let minDistanceToTarget = Infinity;
-let foundDirectHit = false;
-
-const testAngles = [15, 25, 35, 45, 55, 65, 75, 82];
-for(let aCode of testAngles){
-for(let pCode = 15; pCode <= 100; pCode += 3){
-const simResult = simulateShotVirtual(at, aCode, pCode, wp);
-
-if(simResult.hitTank && simResult.hitTank.team !== at.team){
-bestAngle = aCode;
-bestPower = pCode;
-foundDirectHit = true;
-break;
-}
-
-if(simResult.collidedTerrain){
-let distToEnemy = Math.abs(simResult.hitX - tcx);
-if(distToEnemy < wp.radius * 0.85){
-bestAngle = aCode;
-bestPower = pCode;
-foundDirectHit = true;
-break;
-}
-
-if(distToEnemy < minDistanceToTarget){
-minDistanceToTarget = distToEnemy;
-bestAngle = aCode;
-bestPower = pCode;
-}
-}
-}
-if(foundDirectHit) break;
-}
-
-at.angle = bestAngle;
-at.power = Math.min(100, Math.max(10, bestPower));
+at.angle=45;
+at.power=50;
 fireProjectile();
 }
 
 function updateAI(){
-const a=tanks[currentTankIndex];
-if(!a.isPlayer&&a.isMoving){
-const s=1.8;
-if(Math.abs(a.x-a.targetX)>s){
-a.x+=(a.targetX>a.x)?s:-s;
-updateTankY(a);
-}else{
-a.x=a.targetX;
-a.isMoving=false;
-setTimeout(()=>executeAIShot(a),200);
-}
-}
+// Sem IA em multiplayer local PvP
 }
 
 function updateHealthBars(){
-let gt=tanks.filter(t=>t.team==='green').length,rt=tanks.filter(t=>t.team==='red').length,ga=tanks.filter(t=>t.team==='green').reduce((a,t)=>a+t.health,0)/gt,ra=tanks.filter(t=>t.team==='red').reduce((a,t)=>a+t.health,0)/rt;
+let ga=tanks[0]?tanks[0].health:0;
+let ra=tanks[1]?tanks[1].health:0;
 document.getElementById('healthGreen').style.width=`${Math.max(0,ga)}%`;
 document.getElementById('healthRed').style.width=`${Math.max(0,ra)}%`;
 }
 
 function checkWin(){
-const ga=tanks.filter(t=>t.team==='green'&&t.health>0).length,ra=tanks.filter(t=>t.team==='red'&&t.health>0).length;
-if(ga===0){showModal('🤖 INIMIGOS VENCEU!','Seu esquadrão foi derrotado.',false);return true;}
-if(ra===0){const il=currentStage>=maxStages;showModal(il?'🏆 VOCÊ ZEROU O JOGO!':`🎉 FASE ${currentStage} CONCLUÍDA!`,il?'Parabéns! Você venceu a Batalha Final!':'Inimigos destruídos! Próxima fase.',!il);return true;}
+let ga=tanks[0]?tanks[0].health:0;
+let ra=tanks[1]?tanks[1].health:0;
+if(ga<=0){showModal('🔴 JOGADOR 2 VENCEU!','O tanque verde foi destruído.',false);return true;}
+if(ra<=0){showModal('🟢 JOGADOR 1 VENCEU!','O tanque vermelho foi destruído.',false);return true;}
 return false;
 }
 
 function showModal(t,d,sc){
 document.getElementById('modalTitle').textContent=t;
 document.getElementById('modalDesc').textContent=d;
-document.getElementById('btnContinue').style.display=sc?'block':'none';
 document.getElementById('gameModal').classList.add('active');
 }
 
-function nextStage(){
-if(currentStage<maxStages)currentStage++;
-document.getElementById('gameModal').classList.remove('active');
-initStage();updateHealthBars();isShooting=false;projectiles=[];
-document.getElementById('turnIndicator').textContent='🟢 SUA VEZ — [🛈 Mover: 4 / 6 | Mira: 2 / 8 | Força: 1 / 3 | Atirar: 5 | Munição: 🔴 / 🟢 / 🟡]';
-}
-
 function resetGame(fr=false){
-if(fr){currentStage=1;for(let k in aiGlobalBrain.redTanks)delete aiGlobalBrain.redTanks[k];aiGlobalBrain.successfulShotsMemory=[];}
 document.getElementById('gameModal').classList.remove('active');
 initStage();updateHealthBars();isShooting=false;projectiles=[];
-document.getElementById('turnIndicator').textContent='🟢 SUA VEZ — [🛈 Mover: 4 / 6 | Mira: 2 / 8 | Força: 1 / 3 | Atirar: 5 | Munição: 🔴 / 🟢 / 🟡]';
+document.getElementById('turnIndicator').textContent='🟢 SUA VEZ — [🛈 Mover: 4 / 6 | Mira: 2 / 8 | Força: 1 / 3 | Atirar: 5]';
 }
 
 function processControls(){
 const a=tanks[currentTankIndex];
-if(a&&a.isPlayer&&!isShooting){
+if(a && (!isMultiplayer || currentTankIndex === localPlayerId) && !isShooting){
 if(targetCursor.active){
 if(moveDir!==0) targetCursor.x = Math.max(10, Math.min(logicalWidth-10, targetCursor.x + moveDir*3));
 if(angleDir!==0) targetCursor.y = Math.max(10, Math.min(logicalHeight-10, targetCursor.y - angleDir*3));
@@ -713,22 +608,25 @@ a.isMoving=true;
 a.facing=moveDir>0?1:-1;
 a.x=Math.max(10,Math.min(logicalWidth-25,a.x+moveDir*1.8));
 updateTankY(a);
+if(isMultiplayer && conn) conn.send({type:'MOVE', tankIndex: currentTankIndex, x: a.x, facing: a.facing});
 }else a.isMoving=false;
 
 if(angleDir!==0){
 a.angle+=angleDir*1.2;
 a.angle=Math.max(0,Math.min(85,a.angle));
+if(isMultiplayer && conn) conn.send({type:'ANGLE', tankIndex: currentTankIndex, angle: a.angle});
 }
 
 if(forceDir!==0){
 a.power=Math.max(10,Math.min(100,a.power+forceDir*1.0));
 document.getElementById('powerText').textContent=`${Math.floor(a.power)}%`;
+if(isMultiplayer && conn) conn.send({type:'POWER', tankIndex: currentTankIndex, power: a.power});
 }
 }
 }
 
 function gameLoop(){
-processControls();updatePhysicsObjects();updateAI();
+processControls();updatePhysicsObjects();
 ctx.clearRect(0,0,logicalWidth,logicalHeight);
 updateProjectile();drawWorld();
 requestAnimationFrame(gameLoop);
@@ -758,26 +656,20 @@ setupContinuousButton(angleMinusBtn,()=>angleDir=-1,()=>angleDir=0);
 fireBtn.addEventListener('pointerdown',e=>{
 e.preventDefault();
 const a=tanks[currentTankIndex];
-if(a&&a.isPlayer&&!isShooting)fireProjectile();
+if(a && (!isMultiplayer || currentTankIndex === localPlayerId) && !isShooting)fireProjectile();
 });
 
 function selectWeaponIndex(index){
 const a=tanks[currentTankIndex];
-if(a&&a.isPlayer){
+if(a && (!isMultiplayer || currentTankIndex === localPlayerId)){
 if(index===2 && a.specialUsed) return;
 selectedWeapon=index;
 document.querySelectorAll('.ammo-btn').forEach((x,i)=>x.classList.toggle('active',i===selectedWeapon));
 
 if(index===2){
 targetCursor.active = true;
-const targetEnemy = tanks.find(t=>t.team!=='green'&&t.health>0);
-if(targetEnemy){
-targetCursor.x = targetEnemy.x + 10;
-targetCursor.y = targetEnemy.y + 10;
-}else{
 targetCursor.x = logicalWidth/2;
 targetCursor.y = logicalHeight/2;
-}
 AudioFX.playTargetLock();
 }else{
 targetCursor.active = false;
@@ -790,6 +682,89 @@ b.addEventListener('click',()=>{
 selectWeaponIndex(Number(b.dataset.weapon));
 });
 });
+
+// FUNÇÕES DE REDE MULTIPLAYER WI-FI
+function hostGame() {
+  isMultiplayer = true;
+  isHost = true;
+  localPlayerId = 0;
+  
+  peer = new Peer();
+  peer.on('open', (id) => {
+    document.getElementById('modalTitle').textContent = '📡 SALA CRIADA!';
+    document.getElementById('modalDesc').innerHTML = `Código da sua sala Wi-Fi:<br><b style="font-size:22px;color:#f1c40f;">${id}</b><br><br>Digite este código no celular do seu amigo para conectar!`;
+    document.getElementById('menuButtons').innerHTML = `<button class="btn-modal" onclick="startMultiplayerGame()">INICIAR PARTIDA</button>`;
+  });
+
+  peer.on('connection', (c) => {
+    conn = c;
+    setupConnectionListeners();
+    alert('Amigo conectado com sucesso via Wi-Fi!');
+    startMultiplayerGame();
+  });
+}
+
+function showJoinPrompt() {
+  document.getElementById('modalTitle').textContent = '🔗 ENTRAR EM SALA';
+  document.getElementById('modalDesc').innerHTML = `Digite o código da sala do Host (TV ou outro celular):<br><br><input type="text" id="roomIdInput" class="net-input" placeholder="Cole o código aqui">`;
+  document.getElementById('menuButtons').innerHTML = `<button class="btn-modal" onclick="joinGame()">CONECTAR</button><button class="btn-modal secondary" onclick="location.reload()">VOLTAR</button>`;
+}
+
+function joinGame() {
+  const roomId = document.getElementById('roomIdInput').value.trim();
+  if(!roomId) return alert('Digite um código válido!');
+  
+  isMultiplayer = true;
+  isHost = false;
+  localPlayerId = 1;
+
+  peer = new Peer();
+  peer.on('open', () => {
+    conn = peer.connect(roomId);
+    setupConnectionListeners();
+    document.getElementById('modalTitle').textContent = '⌛ CONECTANDO...';
+    document.getElementById('modalDesc').textContent = 'Aguardando conexão com o Host...';
+    document.getElementById('menuButtons').innerHTML = '';
+  });
+}
+
+function setupConnectionListeners() {
+  conn.on('data', (data) => {
+    if(data.type === 'MOVE') {
+      let t = tanks[data.tankIndex];
+      if(t) { t.x = data.x; t.facing = data.facing; t.isMoving = true; updateTankY(t); }
+    } else if(data.type === 'ANGLE') {
+      let t = tanks[data.tankIndex];
+      if(t) { t.angle = data.angle; }
+    } else if(data.type === 'POWER') {
+      let t = tanks[data.tankIndex];
+      if(t) { t.power = data.power; }
+    } else if(data.type === 'FIRE') {
+      executeFireAction(data.tankIndex, data.weapon, data.angle, data.power, data.targetX, data.targetY);
+    } else if(data.type === 'START') {
+      startMultiplayerGame();
+    }
+  });
+}
+
+function startMultiplayerGame() {
+  isMultiplayer = true;
+  if(isHost && conn) { conn.send({type: 'START'}); }
+  document.getElementById('gameModal').classList.remove('active');
+  initStage();
+  updateHealthBars();
+  isShooting = false;
+  projectiles = [];
+}
+
+function startSinglePlayer() {
+  isMultiplayer = false;
+  document.getElementById('gameModal').classList.remove('active');
+  initStage();
+  updateHealthBars();
+  isShooting = false;
+  projectiles = [];
+}
 
 const keyState = {};
 
@@ -840,24 +815,9 @@ e.preventDefault();
 if (code === 'Digit5' || code === 'Numpad5' || keyCode === 53 || keyCode === 101 || k === ' ' || k === 'Space' || k === 'Enter' || keyCode === 13 || keyCode === 29443 || keyCode === 10252) {
 fireBtn.classList.add('active-key');
 const a = tanks[currentTankIndex];
-if (a && a.isPlayer && !isShooting) {
+if (a && (!isMultiplayer || currentTankIndex === localPlayerId) && !isShooting) {
 fireProjectile();
 }
-e.preventDefault();
-}
-
-if (k === 'Red' || k === 'PROG_RED' || k === 'red' || keyCode === 403 || keyCode === 82) {
-selectWeaponIndex(0);
-e.preventDefault();
-}
-
-if (k === 'Green' || k === 'PROG_GREEN' || k === 'green' || keyCode === 404 || keyCode === 71) {
-selectWeaponIndex(1);
-e.preventDefault();
-}
-
-if (k === 'Yellow' || k === 'PROG_YELLOW' || k === 'yellow' || keyCode === 405 || keyCode === 89) {
-selectWeaponIndex(2);
 e.preventDefault();
 }
 });
