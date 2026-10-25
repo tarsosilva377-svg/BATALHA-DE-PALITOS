@@ -7,7 +7,7 @@
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;-webkit-tap-highlight-color:transparent;user-select:none}
-html,body{background:#0a0714;width:100vw;height:100dvh;height:100vh;display:flex;flex-direction:column;overflow:hidden;position:fixed;inset:0}
+html,body{background:#0a0714;width:100vw;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
 .health-top{width:100%;padding:4px 12px;display:flex;justify-content:space-between;align-items:center;background:rgba(20,14,35,.95);backdrop-filter:blur(10px);border-bottom:1px solid rgba(241,196,15,.2);height:42px;z-index:10;flex-shrink:0}
 .player-box{display:flex;align-items:center;gap:8px;flex:1}
 .player-box.right{flex-direction:row-reverse}
@@ -22,7 +22,7 @@ html,body{background:#0a0714;width:100vw;height:100dvh;height:100vh;display:flex
 .turn-line{width:100%;padding:3px 6px;text-align:center;background:linear-gradient(90deg,rgba(241,196,15,.15),rgba(241,196,15,.05));color:#f1c40f;font-weight:700;font-size:10px;letter-spacing:0.5px;border-bottom:1px solid rgba(241,196,15,.1);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .canvas-container{flex:1;display:flex;justify-content:center;align-items:center;position:relative;overflow:hidden;width:100%;min-height:0}
 canvas{width:100%;height:100%;display:block}
-.controls{width:100%;padding:6px 10px;background:rgba(18,13,32,.98);border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
+.controls{width:100%;padding:6px 10px;padding-bottom:calc(6px + env(safe-area-inset-bottom, 0px));background:rgba(18,13,32,.98);border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;gap:10px;flex-shrink:0;flex-wrap:wrap;z-index:20}
 .pad-group{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.04);padding:4px 6px;border-radius:10px;border:1px solid rgba(255,255,255,.08)}
 .pad-label{color:#888;font-size:8px;font-weight:800;letter-spacing:1px}
 .btn-game{background:linear-gradient(180deg,#3a2d5e,#2b1f47);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:8px;font-weight:700;box-shadow:0 2px 4px rgba(0,0,0,.3);transition:transform.1s;cursor:pointer;outline:none}
@@ -84,6 +84,7 @@ let isHost = false;
 let isMultiplayer = false;
 let localPlayerId = 0; 
 let hostLogicalWidth = 0;
+let hostLogicalHeight = 0;
 
 const bgMusic = new Audio('the_big_fight.mp3..oga');
 bgMusic.loop = true;
@@ -227,7 +228,11 @@ if(isMultiplayer && conn){
   if(hostLogicalWidth && logicalWidth !== hostLogicalWidth) {
     sendX = targetCursor.x * (hostLogicalWidth / logicalWidth);
   }
-  conn.send({type:'FIRE', tankIndex: currentTankIndex, weapon: wi, angle: t.angle, power: t.power, targetX: sendX, targetY: targetCursor.y});
+  let sendY = targetCursor.y;
+  if(hostLogicalHeight && logicalHeight !== hostLogicalHeight) {
+    sendY = targetCursor.y * (hostLogicalHeight / logicalHeight);
+  }
+  conn.send({type:'FIRE', tankIndex: currentTankIndex, weapon: wi, angle: t.angle, power: t.power, targetX: sendX, targetY: sendY});
 }
 
 executeFireAction(currentTankIndex, wi, t.angle, t.power, targetCursor.x, targetCursor.y);
@@ -255,12 +260,16 @@ let actualTx = tx;
 if(isMultiplayer && hostLogicalWidth && logicalWidth !== hostLogicalWidth) {
   actualTx = tx * (logicalWidth / hostLogicalWidth);
 }
+let actualTy = ty;
+if(isMultiplayer && hostLogicalHeight && logicalHeight !== hostLogicalHeight) {
+  actualTy = ty * (logicalHeight / hostLogicalHeight);
+}
 let enemy = tanks.find(tk => tk.team !== t.team);
 let defaultTx = enemy ? (enemy.x + enemy.width/2) : logicalWidth/2;
 let defaultTy = enemy ? enemy.y : logicalHeight/2;
 
 const tgtX = (isMultiplayer && actualTx > 0) ? actualTx : defaultTx;
-const tgtY = (isMultiplayer && ty > 0) ? ty : defaultTy;
+const tgtY = (isMultiplayer && actualTy > 0) ? actualTy : defaultTy;
 targetCursor.active = false;
 
 for(let i=-1; i<=1; i++){
@@ -866,19 +875,24 @@ function setupConnectionListeners() {
   conn.on('data', (data) => {
     if(data.type === 'STAGE_DATA') {
       hostLogicalWidth = data.hostWidth;
+      hostLogicalHeight = data.hostHeight || logicalHeight;
+      
       let scaleX = logicalWidth / data.hostWidth;
+      let scaleY = logicalHeight / hostLogicalHeight;
       
       terrainHeights = new Float32Array(Math.ceil(logicalWidth) + 1);
       let rawH = data.terrainHeights;
       for(let x=0; x<=logicalWidth; x++) {
         let srcX = Math.min(rawH.length - 1, Math.floor(x / scaleX));
-        terrainHeights[x] = rawH[srcX];
+        terrainHeights[x] = rawH[srcX] * scaleY;
       }
 
       tanks = data.tanks.map(tk => ({...tk, x: tk.x * scaleX}));
       peakXsCache = data.peakXsCache.map(px => px * scaleX);
-      rocks = data.rocks.map(r => ({...r, x: r.x * scaleX, peakRef: r.peakRef * scaleX}));
+      rocks = data.rocks.map(r => ({...r, x: r.x * scaleX, y: r.y * scaleY, peakRef: r.peakRef * scaleX}));
       currentTankIndex = data.currentTankIndex || 0;
+      
+      tanks.forEach(t => updateTankY(t));
 
       const modal = document.getElementById('gameModal');
       if(modal) {
@@ -904,11 +918,13 @@ function setupConnectionListeners() {
       executeFireAction(data.tankIndex, data.weapon, data.angle, data.power, data.targetX, data.targetY);
     } else if(data.type === 'STATE_SYNC') {
       let scaleX = logicalWidth / (hostLogicalWidth || logicalWidth);
+      let scaleY = logicalHeight / (hostLogicalHeight || logicalHeight);
+      
       tanks = data.tanks.map(tk => ({...tk, x: tk.x * scaleX}));
       let rawH = data.terrainHeights;
       for(let x=0; x<=logicalWidth; x++) {
         let srcX = Math.min(rawH.length - 1, Math.floor(x / scaleX));
-        terrainHeights[x] = rawH[srcX];
+        terrainHeights[x] = rawH[srcX] * scaleY;
       }
       currentTankIndex = data.currentTankIndex;
       tanks.forEach(t => updateTankY(t));
@@ -1073,3 +1089,4 @@ resizeCanvas();initStage();gameLoop();
 </script>
 </body>
 </html>
+ 
