@@ -256,20 +256,7 @@ const sy = t.y + 10;
 projectiles=[];
 
 if(wi===2){
-let actualTx = tx;
-if(isMultiplayer && hostLogicalWidth && logicalWidth !== hostLogicalWidth) {
-  actualTx = tx * (logicalWidth / hostLogicalWidth);
-}
-let actualTy = ty;
-if(isMultiplayer && hostLogicalHeight && logicalHeight !== hostLogicalHeight) {
-  actualTy = ty * (logicalHeight / hostLogicalHeight);
-}
 let enemy = tanks.find(tk => tk.team !== t.team);
-let defaultTx = enemy ? (enemy.x + enemy.width/2) : logicalWidth/2;
-let defaultTy = enemy ? enemy.y : logicalHeight/2;
-
-const tgtX = (isMultiplayer && actualTx > 0) ? actualTx : defaultTx;
-const tgtY = (isMultiplayer && actualTy > 0) ? actualTy : defaultTy;
 targetCursor.active = false;
 
 for(let i=-1; i<=1; i++){
@@ -282,7 +269,7 @@ vx: Math.cos(spreadAngle) * speed,
 vy: Math.sin(spreadAngle) * speed,
 radius: 3.5, explosionRadius: w.radius, gravity: 0, damage: w.damage, color: w.color,
 shooterTeam: t.team, shooterId: t.id, trail: [],
-isGuided: true, targetX: tgtX + (i * 12), targetY: tgtY,
+isGuided: true, targetTankId: enemy ? enemy.id : null,
 lifeTime: 0
 });
 }
@@ -473,9 +460,13 @@ const steps = 3;
 
 if(p.isGuided){
 p.lifeTime += 1;
-if(p.lifeTime > 12){
-const dx = p.targetX - p.x;
-const dy = p.targetY - p.y;
+if(p.lifeTime > 10){
+let target = tanks.find(t => t.id === p.targetTankId);
+let tgtX = target ? (target.x + target.width/2) : logicalWidth/2;
+let tgtY = target ? (target.y + target.height/2) : logicalHeight/2;
+
+const dx = tgtX - p.x;
+const dy = tgtY - p.y;
 const targetAngle = Math.atan2(dy, dx);
 const currentSpeed = 5.2;
 
@@ -485,7 +476,7 @@ let angleDiff = targetAngle - curAngle;
 while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
 while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
 
-const newAngle = curAngle + angleDiff * 0.18;
+const newAngle = curAngle + angleDiff * 0.22;
 p.vx = Math.cos(newAngle) * currentSpeed;
 p.vy = Math.sin(newAngle) * currentSpeed;
 }
@@ -920,7 +911,11 @@ function setupConnectionListeners() {
       let scaleX = logicalWidth / (hostLogicalWidth || logicalWidth);
       let scaleY = logicalHeight / (hostLogicalHeight || logicalHeight);
       
-      tanks = data.tanks.map(tk => ({...tk, x: tk.x * scaleX}));
+      tanks = data.tanks.map((tk, idx) => ({
+        ...tk,
+        x: tk.x * scaleX,
+        health: data.tanks[idx] ? data.tanks[idx].health : tk.health
+      }));
       let rawH = data.terrainHeights;
       for(let x=0; x<=logicalWidth; x++) {
         let srcX = Math.min(rawH.length - 1, Math.floor(x / scaleX));
@@ -984,7 +979,6 @@ const keyCode = e.keyCode;
 if (keyState[code || k]) return;
 keyState[code || k] = true;
 
-// Botão 0 / Numpad 0 para Continuar
 if (code === 'Digit0' || code === 'Numpad0' || keyCode === 48 || keyCode === 96 || k === '0') {
   e.preventDefault();
   const modal = document.getElementById('gameModal');
@@ -1089,4 +1083,4 @@ resizeCanvas();initStage();gameLoop();
 </script>
 </body>
 </html>
- 
+
