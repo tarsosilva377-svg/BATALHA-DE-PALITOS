@@ -898,7 +898,7 @@ function setupConnectionListeners() {
         terrainHeights[x] = rawH[srcX] * scaleY;
       }
 
-      tanks = data.tanks.map(tk => ({...tk, x: tk.x * scaleX}));
+      tanks = data.tanks.map(tk => ({...tk, x: tk.x * scaleX, y: tk.y * scaleY}));
       peakXsCache = data.peakXsCache.map(px => px * scaleX);
       rocks = data.rocks.map(r => ({...r, x: r.x * scaleX, y: r.y * scaleY, peakRef: r.peakRef * scaleX}));
       currentTankIndex = data.currentTankIndex || 0;
@@ -915,8 +915,9 @@ function setupConnectionListeners() {
       isShooting = false;
       projectiles = [];
     } else if(data.type === 'MOVE') {
+      let scaleX = logicalWidth / hostLogicalWidth;
       let t = tanks[data.tankIndex];
-      if(t) { t.x = data.x; t.facing = data.facing; t.isMoving = true; updateTankY(t); }
+      if(t) { t.x = data.x * scaleX; t.facing = data.facing; t.isMoving = true; updateTankY(t); }
     } else if(data.type === 'ANGLE') {
       let t = tanks[data.tankIndex];
       if(t) { t.angle = data.angle; }
@@ -924,16 +925,28 @@ function setupConnectionListeners() {
       let t = tanks[data.tankIndex];
       if(t) { t.power = data.power; document.getElementById('powerText').textContent=`${Math.floor(t.power)}%`; }
     } else if(data.type === 'FIRE') {
-      executeFireAction(data.tankIndex, data.weapon, data.angle, data.power, data.targetX, data.targetY);
+      let scaleX = logicalWidth / hostLogicalWidth;
+      let scaleY = logicalHeight / hostLogicalHeight;
+      executeFireAction(data.tankIndex, data.weapon, data.angle, data.power, data.targetX * scaleX, data.targetY * scaleY);
     } else if(data.type === 'NEXT_TURN_SYNC') {
       currentTankIndex = data.currentTankIndex;
-      tanks = data.tanks;
+      let scaleX = logicalWidth / hostLogicalWidth;
+      let scaleY = logicalHeight / hostLogicalHeight;
+      tanks = data.tanks.map(tk => ({...tk, x: tk.x * scaleX, y: tk.y * scaleY}));
       updateTurnUI();
     } else if(data.type === 'STATE_SYNC') {
-      tanks = data.tanks;
+      let scaleX = logicalWidth / hostLogicalWidth;
+      let scaleY = logicalHeight / hostLogicalHeight;
+      tanks = data.tanks.map((tk, idx) => ({
+        ...tk,
+        x: tk.x * scaleX,
+        y: tk.y * scaleY,
+        health: data.tanks[idx] ? data.tanks[idx].health : tk.health
+      }));
       let rawH = data.terrainHeights;
       for(let x=0; x<=logicalWidth; x++) {
-        terrainHeights[x] = rawH[x] || terrainHeights[x];
+        let srcX = Math.min(rawH.length - 1, Math.floor(x / scaleX));
+        terrainHeights[x] = rawH[srcX] * scaleY;
       }
       currentTankIndex = data.currentTankIndex;
       tanks.forEach(t => updateTankY(t));
@@ -1100,3 +1113,4 @@ resizeCanvas();gameLoop();
 </script>
 </body>
 </html>
+
